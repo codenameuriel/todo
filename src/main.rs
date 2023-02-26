@@ -1,16 +1,9 @@
 use std::fs::{OpenOptions, File};
 use std::io::{BufRead, BufReader, prelude::*};
 
-use clap::{Command, Arg, ArgAction};
+use clap::{Command, Arg, ArgAction, ArgMatches};
 
 fn main() {
-    // todo file to store todos
-    let mut todo_file = OpenOptions::new()
-        .read(true)
-        .create(true) // create the file if it doesn't exist
-        .append(true) // don't overwrite existing content
-        .open("todo.txt").unwrap();
-
     // define cli args
     let arg_matches = Command::new("Todo")
         .about("Program to manage todos")
@@ -35,18 +28,16 @@ fn main() {
         ])
         .get_matches();
 
-    // handle -l --list flags
-    if arg_matches.get_flag("list") {
-        list(&todo_file).unwrap();
-    }
+    // todo file to store todos
+    let mut todo_file = OpenOptions::new()
+        .read(true)
+        .create(true) // create the file if it doesn't exist
+        .append(true) // don't overwrite existing content
+        .open("todo.txt").unwrap();
 
-    // handle -a --add flags
-    let add_arg_val: Option<&String> = arg_matches.get_one("add");
+    on_list(&todo_file, &arg_matches).unwrap();
 
-    if let Some(todo) = add_arg_val {
-        println!("todo: \"{}\" was added!", todo);
-        write(&mut todo_file, todo).unwrap();
-    }
+    on_add(&mut todo_file, &arg_matches).unwrap();
 
     // handle -d --delete flags
     let delete_arg_val: Option<&String> = arg_matches.get_one("delete");
@@ -98,6 +89,27 @@ fn delete(file: &mut File, line_num: &String) -> Result<(), Box<dyn std::error::
     // write todos
     file.write_all(todos.as_bytes())?;
     file.flush()?;
+
+    Ok(())
+}
+
+fn on_list(todo_file: &File, arg_matches: &ArgMatches) -> Result<(), std::io::Error> {
+    // handle -l --list flags
+    if arg_matches.get_flag("list") {
+        list(&todo_file)?;
+    }
+
+    Ok(())
+}
+
+fn on_add(todo_file: &mut File, arg_matches: &ArgMatches) -> Result<(), std::io::Error> {
+    // handle -a --add flags
+    let add_arg_val: Option<&String> = arg_matches.get_one("add");
+
+    if let Some(todo) = add_arg_val {
+        println!("todo: \"{}\" was added!", todo);
+        write(todo_file, todo)?;
+    }
 
     Ok(())
 }

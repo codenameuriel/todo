@@ -39,13 +39,7 @@ fn main() {
 
     on_add(&mut todo_file, &arg_matches).unwrap();
 
-    // handle -d --delete flags
-    let delete_arg_val: Option<&String> = arg_matches.get_one("delete");
-
-    if let Some(line_number) = delete_arg_val {
-        println!("todo line number: {}", line_number);
-        delete(&mut todo_file, line_number).unwrap();
-    }
+    on_delete(&mut todo_file, &arg_matches).unwrap();
 }
 
 fn list(file: &File) -> Result<(), std::io::Error> {
@@ -75,10 +69,11 @@ fn delete(file: &mut File, line_num: &String) -> Result<(), Box<dyn std::error::
 
     for (i, line) in reader.lines().enumerate() {
         if i + 1 != line_num {
-            // println!("line: {}", line.unwrap());
-            let line = line.unwrap();
+            let line = line?;
             todos.push_str(&line);
             todos.push_str("\n");
+        } else {
+            println!("deleted todo: {}", line?);
         }
     }
 
@@ -109,6 +104,17 @@ fn on_add(todo_file: &mut File, arg_matches: &ArgMatches) -> Result<(), std::io:
     if let Some(todo) = add_arg_val {
         println!("todo: \"{}\" was added!", todo);
         write(todo_file, todo)?;
+    }
+
+    Ok(())
+}
+
+fn on_delete(todo_file: &mut File, arg_matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    // handle -d --delete flags
+    let delete_arg_val: Option<&String> = arg_matches.get_one("delete");
+
+    if let Some(line_number) = delete_arg_val {
+        delete(todo_file, line_number)?;
     }
 
     Ok(())
